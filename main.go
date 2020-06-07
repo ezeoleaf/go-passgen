@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -14,8 +15,14 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
-const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const numbers = "0123456789"
+const (
+	letters     = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	numbers     = "0123456789"
+	letterType  = 1
+	numberType  = 2
+	upperLetter = 1
+	lowerLetter = 2
+)
 
 type TemplateRenderer struct {
 	templates *template.Template
@@ -79,20 +86,33 @@ func getPass() echo.HandlerFunc {
 func generatePassword(length int) string {
 	rand.Seed(time.Now().UnixNano())
 
-	pass := make([]byte, length)
+	p := make([]byte, length)
+	prevLetter := 0
 
 	for i := 0; i < length; i++ {
 		randType := rand.Intn(2) + 1
-		if randType == 1 {
-			loc := rand.Intn(len(letters)) + 0
-			pass[i] = letters[loc]
-		} else {
+		if randType == letterType {
+			if prevLetter == 0 {
+				prevLetter = rand.Intn(2) + 1
+			}
+			ls := letters
+			if prevLetter == upperLetter {
+				ls = strings.ToLower(ls)
+				prevLetter = lowerLetter
+			} else if prevLetter == lowerLetter {
+				ls = strings.ToUpper(ls)
+				prevLetter = upperLetter
+			}
+
+			loc := rand.Intn(len(ls)) + 0
+			p[i] = ls[loc]
+		} else if randType == numberType {
 			loc := rand.Intn(len(numbers)) + 0
-			pass[i] = numbers[loc]
+			p[i] = numbers[loc]
 		}
 	}
 
-	return string(pass)
+	return string(p)
 }
 
 func main() {
